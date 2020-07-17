@@ -20,6 +20,17 @@ def response_summary(num_results):
 
 def response_elements(response):
     elements = ""
+    for r in response['results']:
+        elements += "- " + r['title']
+        if 'year' in r:
+            elements += " (" + str(r['year']) + ")"
+        if r['type'] == 'tvshow':
+            elements += " (Serie TV)"
+        elif r['type'] == 'movie':
+            elements += " (Película)"
+        elif r['type'] == 'episode':
+            elements += " (Episodio)"
+        elements += "\n"
     return elements
 
 def promptUser():
