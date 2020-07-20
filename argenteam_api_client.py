@@ -29,18 +29,21 @@ class Result(object):
             s += " (Episodio)"
         return s
 
-def dl_all_tvshow_subs(output):
-    for season in output['seasons']:
+def dl_all_tvshow_subs(show_id):
+    tvshow = get_details_tvshow(show_id)
+    for season in tvshow['seasons']:
         for episode in season['episodes']:
             dl_episode_subs(episode['id'])
     options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
-    print()
     return options, [], None
 
 def dl_episode_subs(episode_id):
     episode = get_details_episode(episode_id)
+    return dl_item_subs(episode)
+
+def dl_item_subs(item):
     options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
-    for release in episode['releases']:
+    for release in item['releases']:
         if 'subtitles' in release:
             for subs in release['subtitles']:
                 if 'uri' in subs:
@@ -55,20 +58,7 @@ def dl_episode_subs(episode_id):
 
 def dl_movie_subs(movie_id):
     movie = get_details_movie(movie_id)
-    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
-    print()
-    for release in movie['releases']:
-        if 'subtitles' in release:
-            for subs in release['subtitles']:
-                if 'uri' in subs:
-                    url = subs['uri']
-                    r = requests.get(url, stream = True) # download streaming
-                    local_filename = "output_files/" + r.url.split("/")[-1]
-                    with open(local_filename, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size = 1024):
-	                        if chunk: # filter out keep-alive new chunks
-		                        f.write(chunk)
-    return options, [], None
+    return dl_item_subs(movie)
 
 def get_details_episode(id):
     try:
@@ -137,11 +127,13 @@ def run_option(user_input, options, elements, output = None):
         sys.exit(0)
     elif user_input == 'D' and "SUBS" in options and output:
         if output["type"] == "tvshow":
-            return dl_all_tvshow_subs(output)
+            options, elements, output = dl_all_tvshow_subs(output["id"])
         elif output["type"] == "movie":
-            return dl_movie_subs(output["id"])
+            options, elements, output = dl_movie_subs(output["id"])
         elif output["type"] == "episode":
-            return dl_episode_subs(output["id"])
+            options, elements, output = dl_episode_subs(output["id"])
+        print()
+        return options, elements, output
     elif user_input.isdigit() and int(user_input) > 0 and int(user_input) <= len(elements) and "VIEW" in options:
         return view_item_details(user_input, options, elements, output)
     else:
