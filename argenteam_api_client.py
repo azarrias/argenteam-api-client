@@ -2,6 +2,8 @@
 
 import requests
 import sys
+from zipfile import ZipFile
+from os import remove
 
 API_URL = "http://argenteam.net/api/v1/"
 SEARCH_URL = API_URL + "search"
@@ -33,27 +35,35 @@ def dl_all_tvshow_subs(show_id):
     tvshow = get_details_tvshow(show_id)
     for season in tvshow['seasons']:
         for episode in season['episodes']:
-            dl_episode_subs(episode['id'])
-    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
-    return options, [], None
+            options, elements, output = dl_episode_subs(episode['id'])
+    return options, elements, output
 
 def dl_episode_subs(episode_id):
     episode = get_details_episode(episode_id)
     return dl_item_subs(episode)
 
 def dl_item_subs(item):
+    counter = 0
     options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
     for release in item['releases']:
         if 'subtitles' in release:
             for subs in release['subtitles']:
                 if 'uri' in subs:
+                    counter += 1
                     url = subs['uri']
                     r = requests.get(url, stream = True) # download streaming
-                    local_filename = "output_files/" + r.url.split("/")[-1]
-                    with open(local_filename, 'wb') as f:
+                    filename = r.url.split("/")[-1]
+                    print("Info: descargando y extrayendo subtítulo de '" + filename + "'")
+                    path = "output_files/" + filename
+                    with open(path, 'wb') as f:
                         for chunk in r.iter_content(chunk_size = 1024):
 	                        if chunk: # filter out keep-alive new chunks
 		                        f.write(chunk)
+                    with ZipFile(path, 'r') as zipfile:
+                        zipfile.extractall("output_files")
+                    remove(path)
+    if counter == 0:
+        print("Info: no se encontraron subtítulos para el item '" + item['title'] + "'")
     return options, [], None
 
 def dl_movie_subs(movie_id):
