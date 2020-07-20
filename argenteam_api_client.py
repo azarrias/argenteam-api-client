@@ -32,13 +32,14 @@ class Result(object):
 def dl_all_tvshow_subs(output):
     for season in output['seasons']:
         for episode in season['episodes']:
-            dl_subs(episode['id'])
+            dl_episode_subs(episode['id'])
     options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
     print()
     return options, [], None
 
-def dl_subs(episode_id):
+def dl_episode_subs(episode_id):
     episode = get_details_episode(episode_id)
+    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
     for release in episode['releases']:
         if 'subtitles' in release:
             for subs in release['subtitles']:
@@ -50,10 +51,37 @@ def dl_subs(episode_id):
                         for chunk in r.iter_content(chunk_size = 1024):
 	                        if chunk: # filter out keep-alive new chunks
 		                        f.write(chunk)
+    return options, [], None
+
+def dl_movie_subs(movie_id):
+    movie = get_details_movie(movie_id)
+    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
+    print()
+    for release in movie['releases']:
+        if 'subtitles' in release:
+            for subs in release['subtitles']:
+                if 'uri' in subs:
+                    url = subs['uri']
+                    r = requests.get(url, stream = True) # download streaming
+                    local_filename = "output_files/" + r.url.split("/")[-1]
+                    with open(local_filename, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size = 1024):
+	                        if chunk: # filter out keep-alive new chunks
+		                        f.write(chunk)
+    return options, [], None
 
 def get_details_episode(id):
     try:
         response = requests.post(EPISODE_URL, data={"id": id})
+    except requests.exceptions.RequestException:
+        print("ERROR! No se ha podido obtener respuesta del servidor")
+        print("Revisa los datos de conexión")
+        sys.exit(0)
+    return response.json()
+
+def get_details_movie(id):
+    try:
+        response = requests.post(MOVIE_URL, data={"id": id})
     except requests.exceptions.RequestException:
         print("ERROR! No se ha podido obtener respuesta del servidor")
         print("Revisa los datos de conexión")
@@ -108,7 +136,12 @@ def run_option(user_input, options, elements, output = None):
     if user_input == 'S' and "EXIT" in options:
         sys.exit(0)
     elif user_input == 'D' and "SUBS" in options and output:
-        return dl_all_tvshow_subs(output)
+        if output["type"] == "tvshow":
+            return dl_all_tvshow_subs(output)
+        elif output["type"] == "movie":
+            return dl_movie_subs(output["id"])
+        elif output["type"] == "episode":
+            return dl_episode_subs(output["id"])
     elif user_input.isdigit() and int(user_input) > 0 and int(user_input) <= len(elements) and "VIEW" in options:
         return view_item_details(user_input, options, elements, output)
     else:
@@ -128,12 +161,11 @@ def search(query):
 
 def view_item_details(user_input, options, elements, output):
     result = elements[int(user_input) - 1]
-    if result.type == 'tvshow':
-        output = get_details_tvshow(result.id)
     print(result)
     print(result.summary + "\n")
     options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir",
         "SUBS" : "[D]escargar subtítulos" }
+    output = output['results'][int(user_input) - 1]
     return options, elements, output
 
 if __name__ == '__main__':
