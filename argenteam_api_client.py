@@ -111,7 +111,10 @@ def run_option(user_input, options, elements, output = None):
     elif user_input.isdigit() and int(user_input) > 0 and int(user_input) <= len(elements) and "VIEW" in options:
         return view_item_details(user_input, options, elements, output)
     else:
-        return get_search_results(user_input, options)
+        options, elements, output = get_search_results(user_input, options)
+        if len(elements) == 1:
+            options, elements, output = view_item_details(1, options, elements, output)
+        return options, elements, output
 
 def search(query):
     try:
