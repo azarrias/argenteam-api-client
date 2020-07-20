@@ -70,6 +70,7 @@ def get_details_tvshow(id):
     return response.json()
 
 def get_search_results(user_input, options):
+    elements = []
     output = search(user_input)
     num_results = output['total']
     print(response_summary(num_results))
