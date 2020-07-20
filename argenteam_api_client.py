@@ -58,6 +58,8 @@ def prompt_user(options, elements, output = None):
         result = elements[int(user_input) - 1]
         if result.type == 'tvshow':
             output = search_tvshow(result.id)
+        print(result)
+        print(result.summary + "\n")
         options = { "SEARCH": "Buscar por película, serie, actor o director", 
             "SUBS": "[D]escargar subtítulos", 
             "EXIT": "[S]alir" }
