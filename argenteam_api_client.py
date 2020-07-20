@@ -33,10 +33,9 @@ def dl_all_tvshow_subs(output):
     for season in output['seasons']:
         for episode in season['episodes']:
             dl_subs(episode['id'])
-    options = { "SEARCH": "Buscar por película, serie, actor o director", 
-        "SUBS": "[D]escargar subtítulos", 
-        "EXIT": "[S]alir" }
-    return options
+    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
+    print()
+    return options, [], None
 
 def dl_subs(episode_id):
     episode = get_details_episode(episode_id)
@@ -45,8 +44,8 @@ def dl_subs(episode_id):
             for subs in release['subtitles']:
                 if 'uri' in subs:
                     url = subs['uri']
-                    local_filename = url.split("/")[-1]
                     r = requests.get(url, stream = True) # download streaming
+                    local_filename = "output_files/" + r.url.split("/")[-1]
                     with open(local_filename, 'wb') as f:
                         for chunk in r.iter_content(chunk_size = 1024):
 	                        if chunk: # filter out keep-alive new chunks
@@ -70,7 +69,7 @@ def get_details_tvshow(id):
         sys.exit(0)
     return response.json()
 
-def get_search_results(user_input):
+def get_search_results(user_input, options):
     output = search(user_input)
     num_results = output['total']
     print(response_summary(num_results))
@@ -79,14 +78,13 @@ def get_search_results(user_input):
         for i in range(len(elements)):
             print("[" + str(i + 1) + "] - " + str(elements[i]))
         print()
-        options = { "SEARCH": "Buscar por película, serie, actor o director", 
-            "VIEW": "Número a la izquierda del título para ver el detalle", 
-            "EXIT": "[S]alir" }
+        options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir",
+            "VIEW" : "Número a la izquierda del título para ver el detalle" }
     return options, elements, output
 
 def prompt_user(options):
     for o in options:
-        print(options[o])
+        print("* " + options[o])
     user_input = input("> ")
     return user_input
 
@@ -111,9 +109,9 @@ def run_option(user_input, options, elements, output = None):
     elif user_input == 'D' and "SUBS" in options and output:
         return dl_all_tvshow_subs(output)
     elif user_input.isdigit() and int(user_input) > 0 and int(user_input) <= len(elements) and "VIEW" in options:
-        return view_item_details(user_input, elements, output)
+        return view_item_details(user_input, options, elements, output)
     else:
-        return get_search_results(user_input)
+        return get_search_results(user_input, options)
 
 def search(query):
     try:
@@ -124,24 +122,23 @@ def search(query):
         sys.exit(0)
     return response.json()
 
-def view_item_details(user_input, elements, output):
+def view_item_details(user_input, options, elements, output):
     result = elements[int(user_input) - 1]
     if result.type == 'tvshow':
         output = get_details_tvshow(result.id)
     print(result)
     print(result.summary + "\n")
-    options = { "SEARCH": "Buscar por película, serie, actor o director", 
-        "SUBS": "[D]escargar subtítulos", 
-        "EXIT": "[S]alir" }
+    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir",
+        "SUBS" : "[D]escargar subtítulos" }
     return options, elements, output
 
 if __name__ == '__main__':
     print("aRGENTeaM API client (podría requerir el uso de VPN)")
     print("====================================================")
     print()
-    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
     elements = []
     output = None
+    options = { "SEARCH": "Buscar por película, serie, actor o director", "EXIT": "[S]alir" }
     while True:
         user_input = prompt_user(options)
         options, elements, output = run_option(user_input, options, elements, output)

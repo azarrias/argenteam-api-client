@@ -143,3 +143,6 @@ dmypy.json
 pyvenv.cfg
 .venv
 pip-selfcheck.json
+
+# Output folder
+output_files/
