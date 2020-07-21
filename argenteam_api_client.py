@@ -169,7 +169,7 @@ def get_release_filenames(release, item, tvshow):
         filename += ' ' + release['codec']
     if 'team' in release and len(release['team']) > 0:
         filename += ' ' + release['team']
-    filename = filename.translate ({ord(c): "_" for c in r"!@#$%^&*()[]{};:,./<>?\|`~-=_+"})
+    filename = filename.translate ({ord(c): "_" for c in r"!@#$%^&*[]{};:,./<>?\|`~-=_+"})
     magnets_path = OUTPUT_PATH + filename + ' (magnets).txt'
     elinks_path = OUTPUT_PATH + filename + ' (elinks).txt'
     return magnets_path, elinks_path
