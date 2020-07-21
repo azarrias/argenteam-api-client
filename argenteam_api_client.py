@@ -5,11 +5,15 @@ import sys
 from zipfile import ZipFile
 import os
 
+# use paths relative to this script, regardless of the path from which it is invoked
+this_path = os.path.dirname(os.path.realpath(__file__))
+
 API_URL = "http://argenteam.net/api/v1/"
 SEARCH_URL = API_URL + "search"
 TVSHOW_URL = API_URL + "tvshow"
 MOVIE_URL = API_URL + "movie"
 EPISODE_URL = API_URL + "episode"
+OUTPUT_PATH = os.path.join(this_path, "output_files/")
 
 class Result(object):
     def __init__(self, _id, title, _type, summary, year=None):
@@ -81,13 +85,13 @@ def dl_item_subs(item):
                         continue
                     filename = r.url.split("/")[-1]
                     print("Info: descargando y extrayendo subtítulo de '" + filename + "'")
-                    path = "output_files/" + filename
+                    path = OUTPUT_PATH + "/" + filename
                     with open(path, 'wb') as f:
                         for chunk in r.iter_content(chunk_size = 1024):
 	                        if chunk: # filter out keep-alive new chunks
 		                        f.write(chunk)
                     with ZipFile(path, 'r') as zipfile:
-                        zipfile.extractall("output_files")
+                        zipfile.extractall(OUTPUT_PATH)
                     os.remove(path)
     if counter == 0:
         print("Info: no se encontraron subtítulos para el item '" + item['title'] + "'")
@@ -165,8 +169,9 @@ def get_release_filenames(release, item, tvshow):
         filename += ' ' + release['codec']
     if 'team' in release and len(release['team']) > 0:
         filename += ' ' + release['team']
-    magnets_path = "output_files/" + filename + ' (magnets).txt'
-    elinks_path = "output_files/" + filename + ' (elinks).txt'
+    filename = filename.translate ({ord(c): "_" for c in r"!@#$%^&*()[]{};:,./<>?\|`~-=_+"})
+    magnets_path = OUTPUT_PATH + filename + ' (magnets).txt'
+    elinks_path = OUTPUT_PATH + filename + ' (elinks).txt'
     return magnets_path, elinks_path
 
 def get_search_results(user_input, options):
@@ -196,7 +201,7 @@ def handle_torrent_types(torrent, key, path_magnets):
             return
         filename = r.url.split("/")[-1]
         print("Info: descargando torrent '" + filename + "'")
-        path = "output_files/" + filename
+        path = OUTPUT_PATH + "/" + filename
         with open(path, 'wb') as f:
             for chunk in r.iter_content(chunk_size = 1024):
                 if chunk: # filter out keep-alive new chunks
@@ -289,6 +294,8 @@ def view_item_details(user_input, options, elements, output):
     return options, elements, output
 
 if __name__ == '__main__':
+    if not os.path.exists(OUTPUT_PATH):
+        os.makedirs(OUTPUT_PATH)
     print("aRGENTeaM API client (podría requerir el uso de VPN)")
     print("====================================================")
     print()
